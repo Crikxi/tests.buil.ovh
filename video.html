@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+<style>
+    body{
+    
+        margin:0;
+    }
+
+    video{
+        width: 100%;    
+        max-height: 100vh;    
+    }
+</style>
+
+</head>
+<body>
+    <video></video>
+    <select></select>
+    <script>
+    const videoSelect = document.querySelector('select');    
+    const video = document.querySelector('video');
+    video.onloadedmetadata = function(e) {
+        video.play();
+    };
+    
+    function handleError(err) {
+        console.log(err.name + ": " + err.message); 
+    }
+
+        
+    function gotDevices(deviceInfos) {
+        // Handles being called several times to update labels. Preserve values.
+        const value = videoSelect.value;
+        while (videoSelect.firstChild) {
+            videoSelect.removeChild(videoSelect.firstChild);
+        }
+        for (let i = 0; i !== deviceInfos.length; ++i) {
+            const deviceInfo = deviceInfos[i];
+            if (deviceInfo.kind === 'videoinput') {
+                const option = document.createElement('option');
+                option.value = deviceInfo.deviceId;
+                option.text = deviceInfo.label || `camera ${videoSelect.length + 1}`;
+                videoSelect.appendChild(option);
+            }
+        }
+        if (Array.prototype.slice.call(videoSelect.childNodes).some(n => n.value === value)) {
+            videoSelect.value = value;
+        }
+      
+    }
+
+    navigator.mediaDevices.enumerateDevices().then(gotDevices).catch(handleError);
+    
+    
+    function start(){
+        if (window.stream) {
+            window.stream.getTracks().forEach(track => {
+                track.stop();
+            });
+        }
+    
+        const videoSource = videoSelect.value;
+        navigator.mediaDevices.getUserMedia({
+            video: {deviceId: videoSource ? {exact: videoSource} : undefined}
+        })
+        .then(function(mediaStream) {
+            video.srcObject = mediaStream;
+     
+            return navigator.mediaDevices.enumerateDevices().then(gotDevices).catch(handleError);
+        });
+    
+    }
+    
+    
+    videoSelect.onchange = start;
+    start();
+    </script>
+</body>
+</html>
